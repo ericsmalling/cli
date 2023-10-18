@@ -30,6 +30,8 @@ import {
   facts as dockerFacts,
 } from 'snyk-docker-plugin/dist';
 import { ScanResult } from '../../ecosystems/types';
+import { groupBy } from "lodash";
+import { string } from "vscode-jsonrpc/lib/common/is";
 
 function createJsonResultOutput(jsonResult, options: Options) {
   const jsonResultClone = cloneDeep(jsonResult);
@@ -169,8 +171,17 @@ export function getDisplayedOutput(
     vulnCountText += '.';
   }
 
+  const criticalVulnsCount = Array.from(new Set( res.vulnerabilities.filter(res => res.severity === 'critical').map(res => res.id))).length;
+  const highVulnsCount = Array.from(new Set( res.vulnerabilities.filter(res => res.severity === 'high').map(res => res.id))).length;
+  const mediumVulnsCount = Array.from(new Set( res.vulnerabilities.filter(res => res.severity === 'medium').map(res => res.id))).length;
+  const lowVulnsCount = Array.from(new Set( res.vulnerabilities.filter(res => res.severity === 'low').map(res => res.id))).length;
+
+  const imgspaces = ' '.repeat(  options.path.trim().length - 8 );
+  const vulnspaces = ' '.repeat( 17-(""+res.uniqueCount).length );
   const summary =
-    testedInfoText + ', ' + chalk.red.bold(vulnCountText) + hasUnknownVersions;
+    testedInfoText + ', ' + chalk.red.bold(vulnCountText) + hasUnknownVersions +
+    `\n\nThis Image${imgspaces}Vulnerabilities  Severity\n` +
+    `${options.path}  ${res.uniqueCount}${vulnspaces}${criticalVulnsCount} critical, ${highVulnsCount} high, ${mediumVulnsCount} medium, ${lowVulnsCount} low`;
 
   const fixTip = showFixTip(projectType, res, options);
   const fixAdvice = fixTip ? `\n\n${fixTip}` : '';
